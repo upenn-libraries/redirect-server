@@ -64,8 +64,9 @@ class RedirectHandler extends SimpleChannelInboundHandler<HttpRequest>{
             return;
         }
         Matcher m = PRE_PATH.matcher(val);
-        if (!m.find() || !validHosts.contains(m.group())) {
-            badRequest("redirect not permitted: "+val+", "+m.group(), ctx);
+        String parsed = null;
+        if (!m.find() || !validHosts.contains(parsed = m.group())) {
+            badRequest("redirect not permitted: "+val+", parsed="+parsed, ctx);
             return;
         }
         DefaultFullHttpResponse resp = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FOUND);
