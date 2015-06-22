@@ -1,0 +1,7 @@
+# Whitelist of redirect target hosts, including entire
+# URI before the path porition. Default ports are not 
+# normalized, so list them separately to allow redirects
+# with explicit ports
+
+http://upenn.summon.serialssolutions.com
+http://localhost:8080

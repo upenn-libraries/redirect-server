@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+cd "`dirname $0`/../"
+
+PID=`cat var/run/pid 2>/dev/null` || { exit 0; }
+
+if ps -p $PID >/dev/null 2>&1; then
+  echo $PID
+else
+  echo "recorded pid $PID not found; remove var/run manually" >&2
+  exit 1
+fi
+
+

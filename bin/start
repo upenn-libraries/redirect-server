@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+cd "`dirname $0`/../"
+
+die() {
+  echo "$1" >&2
+  exit 1
+}
+
+mkdir -p var/log
+
+mkdir var/run || die "run directory already exists"
+
+java -jar redirect.jar > var/log/stderrout.log 2>&1 &
+
+PID=$!
+
+echo "$PID" > var/run/pid
+
+export PID
+
+(
+monitor() {
+  local pid="$1"
+  while ps -p $pid >/dev/null 2>&1; do
+    sleep 1
+  done
+}
+
+cleanup() {
+  rm -R var/run
+}
+
+kill_child() {
+  kill $1
+  monitor $1
+}
+
+trap "cleanup $PID" EXIT
+trap "kill_child $PID" INT TERM HUP
+monitor $PID 
+) &
+
+sleep 1
+
+ps -p $PID >/dev/null 2>&1
