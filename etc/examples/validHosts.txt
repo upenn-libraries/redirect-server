@@ -3,5 +3,5 @@
 # normalized, so list them separately to allow redirects
 # with explicit ports
 
-http://upenn.summon.serialssolutions.com
-http://localhost:8080
+#http://allow.redirect.from.com
+#http://localhost:8080
