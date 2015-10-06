@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -45,9 +46,13 @@ public class Redirect implements Runnable {
     private static final String DEFAULT_VALID_HOSTS_FILE = "etc" + File.separatorChar + "validHosts.txt";
 
     public static final String LISTEN_PORT_PROPERTY_NAME = "listenPort";
+    public static final String LISTEN_INTERFACE_PROPERTY_NAME = "listenInterface";
+    public static final String REDIRECT_PREFIX_PROPERTY_NAME = "redirectPrefix";
     public static final String VALID_HOSTS_FILE_PROPERTY_NAME = "validHostsFile";
 
+    private final InetAddress listenInterface;
     private final int listenPort;
+    private final String redirectPrefix;
     private final Set<String> validHosts;
 
     public static void main(String[] args) throws Exception {
@@ -98,6 +103,17 @@ public class Redirect implements Runnable {
 
     private Redirect(Properties props) {
         listenPort = Integer.parseInt(props.getProperty(LISTEN_PORT_PROPERTY_NAME, Integer.toString(DEFAULT_LISTEN_PORT)));
+        String interfaceProp = props.getProperty(LISTEN_INTERFACE_PROPERTY_NAME);
+        if (interfaceProp == null) {
+            listenInterface = InetAddress.getLoopbackAddress();
+        } else {
+            try {
+                listenInterface = InetAddress.getByName(interfaceProp);
+            } catch (UnknownHostException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        redirectPrefix = props.getProperty(REDIRECT_PREFIX_PROPERTY_NAME);
         String validHostsFile = props.getProperty(VALID_HOSTS_FILE_PROPERTY_NAME, DEFAULT_VALID_HOSTS_FILE);
         try {
             validHosts = loadValidHosts(validHostsFile);
@@ -116,9 +132,9 @@ public class Redirect implements Runnable {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new RedirectInitializer(validHosts))
+                    .childHandler(new RedirectInitializer(validHosts, redirectPrefix))
                     .childOption(ChannelOption.AUTO_READ, true)
-                    .bind(InetAddress.getLoopbackAddress(), listenPort)
+                    .bind(listenInterface, listenPort)
                     .sync().channel().closeFuture().sync();
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);

@@ -32,9 +32,15 @@ class RedirectInitializer  extends ChannelInitializer<SocketChannel> {
 
     private final LoggingHandler lh = new LoggingHandler(LogLevel.DEBUG);
     private final RedirectHandler rh;
+    private final WrapRedirect wr;
     
-    public RedirectInitializer(Set<String> validHosts) {
+    public RedirectInitializer(Set<String> validHosts, String prefix) {
         this.rh = new RedirectHandler(validHosts);
+        this.wr = prefix == null ? null : new WrapRedirect(prefix);
+    }
+
+    public RedirectInitializer(Set<String> validHosts) {
+        this(validHosts, null);
     }
     
     @Override
@@ -42,6 +48,9 @@ class RedirectInitializer  extends ChannelInitializer<SocketChannel> {
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast(lh);
         pipeline.addLast(new HttpServerCodec());
+        if (wr != null) {
+            pipeline.addLast(wr);
+        }
         pipeline.addLast(rh);
     }
 
