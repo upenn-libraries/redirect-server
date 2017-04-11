@@ -44,16 +44,19 @@ public class Redirect implements Runnable {
     private static final int DEFAULT_LISTEN_PORT = 8080;
     private static final String DEFAULT_PROPFILE = "etc" + File.separatorChar + "redirect.properties";
     private static final String DEFAULT_VALID_HOSTS_FILE = "etc" + File.separatorChar + "validHosts.txt";
+    private static final int DEFAULT_READ_TIMEOUT_SECONDS = 5;
 
     public static final String LISTEN_PORT_PROPERTY_NAME = "listenPort";
     public static final String LISTEN_INTERFACE_PROPERTY_NAME = "listenInterface";
     public static final String REDIRECT_PREFIX_PROPERTY_NAME = "redirectPrefix";
     public static final String VALID_HOSTS_FILE_PROPERTY_NAME = "validHostsFile";
+    public static final String READ_TIMEOUT_SECONDS_PROPERTY_NAME = "readTimeoutSeconds";
 
     private final InetAddress listenInterface;
     private final int listenPort;
     private final String redirectPrefix;
     private final Set<String> validHosts;
+    private final int readTimeoutSeconds;
 
     public static void main(String[] args) throws Exception {
         InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
@@ -103,6 +106,7 @@ public class Redirect implements Runnable {
 
     private Redirect(Properties props) {
         listenPort = Integer.parseInt(props.getProperty(LISTEN_PORT_PROPERTY_NAME, Integer.toString(DEFAULT_LISTEN_PORT)));
+        readTimeoutSeconds = Integer.parseInt(props.getProperty(READ_TIMEOUT_SECONDS_PROPERTY_NAME, Integer.toString(DEFAULT_READ_TIMEOUT_SECONDS)));
         String interfaceProp = props.getProperty(LISTEN_INTERFACE_PROPERTY_NAME);
         if (interfaceProp == null) {
             listenInterface = InetAddress.getLoopbackAddress();
@@ -132,7 +136,7 @@ public class Redirect implements Runnable {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new RedirectInitializer(validHosts, redirectPrefix))
+                    .childHandler(new RedirectInitializer(validHosts, redirectPrefix, readTimeoutSeconds))
                     .childOption(ChannelOption.AUTO_READ, true)
                     .bind(listenInterface, listenPort)
                     .sync().channel().closeFuture().sync();
