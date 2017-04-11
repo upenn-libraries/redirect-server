@@ -32,13 +32,13 @@ import java.util.Set;
 class RedirectInitializer  extends ChannelInitializer<SocketChannel> {
 
     private final LoggingHandler lh = new LoggingHandler(LogLevel.DEBUG);
-    private final ReadTimeoutHandler rth;
+    private final int readTimeoutSeconds;
     private final RedirectHandler rh;
     private final WrapRedirect wr;
     
     public RedirectInitializer(Set<String> validHosts, String prefix, int readTimeoutSeconds) {
         this.rh = new RedirectHandler(validHosts);
-        this.rth = readTimeoutSeconds <= 0 ? null : new ReadTimeoutHandler(readTimeoutSeconds);
+        this.readTimeoutSeconds = readTimeoutSeconds;
         this.wr = prefix == null ? null : new WrapRedirect(prefix);
     }
 
@@ -50,8 +50,8 @@ class RedirectInitializer  extends ChannelInitializer<SocketChannel> {
     protected void initChannel(final SocketChannel ch) throws Exception {
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast(lh);
-        if (rth != null) {
-            pipeline.addLast(rth);
+        if (readTimeoutSeconds > 0) {
+            pipeline.addLast(new ReadTimeoutHandler(readTimeoutSeconds));
         }
         pipeline.addLast(new HttpServerCodec());
         if (wr != null) {
